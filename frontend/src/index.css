@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "@cometchat/chat-uikit-react/dist/styles/css/CometChatUnified.css";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+  }
+  body {
+    height: 100%;
+    margin: 0;
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #111827;
+    background: #f8f9fb;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #root { height: 100%; }
+  :focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; border-radius: 4px; }
+  :focus:not(:focus-visible) { outline: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  ::selection { background: #e0e9ff; color: #3730a3; }
+}
+
+@layer components {
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background-color: #f1f3f7;
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.7) 50%, transparent 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to   { background-position:  200% 0; }
+  }
+
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  .card { border-radius: 0.75rem; background: #ffffff; box-shadow: 0 1px 3px 0 rgb(0 0 0/0.06), 0 1px 2px -1px rgb(0 0 0/0.04); border: 1px solid #f3f4f6; }
+  .card-hover { border-radius: 0.75rem; background: #ffffff; box-shadow: 0 1px 3px 0 rgb(0 0 0/0.06); border: 1px solid #f3f4f6; transition: box-shadow 150ms, border-color 150ms; }
+  .card-hover:hover { box-shadow: 0 4px 12px 0 rgb(0 0 0/0.08); border-color: #c7d7fe; }
+}
+
+:root {
+  --cometchat-primary-color: #4f46e5;
+  --cometchat-primary-button-color: #4f46e5;
+  --cometchat-primary-button-text: #ffffff;
+  --cometchat-background-color-01: #ffffff;
+  --cometchat-background-color-02: #f8f9fb;
+  --cometchat-background-color-03: #f1f3f7;
+  --cometchat-text-color-primary: #111827;
+  --cometchat-text-color-secondary: #6b7280;
+  --cometchat-text-color-tertiary: #9ca3af;
+  --cometchat-message-sent-bg: #4f46e5;
+  --cometchat-message-sent-text: #ffffff;
+  --cometchat-message-received-bg: #f1f3f7;
+  --cometchat-message-received-text: #111827;
+  --cometchat-border-color: #f3f4f6;
+  --cometchat-border-radius: 0.75rem;
+}
+.cometchat-root, .cometchat-messages { height: 100% !important; }
+.cometchat-messages__header { border-bottom: 1px solid #f3f4f6; background: #ffffff; }

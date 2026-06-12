@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "name": "friendchat-frontend",
+  "framework": "vite",
+
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci",
+
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.cometchat.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; connect-src 'self' *.cometchat.com wss://*.cometchat.com https://*.cometchat.io; img-src 'self' data: blob: *.cometchat.com; frame-ancestors 'none';"
+        }
+      ]
+    }
+  ],
+
+  "env": {
+    "VITE_API_BASE_URL": "@vite_api_base_url",
+    "VITE_COMETCHAT_APP_ID": "@vite_cometchat_app_id",
+    "VITE_COMETCHAT_REGION": "@vite_cometchat_region",
+    "VITE_COMETCHAT_AUTH_KEY": "@vite_cometchat_auth_key"
+  }
+}
