@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target":                     "ES2020",
+    "module":                     "commonjs",
+    "lib":                        ["ES2020"],
+    "outDir":                     "./dist",
+    "rootDir":                    "./src",
+    "strict":                     true,
+    "esModuleInterop":            true,
+    "skipLibCheck":               true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule":          true,
+    "declaration":                true,
+    "sourceMap":                  true,
+    "removeComments":             false,
+    "noUnusedLocals":             true,
+    "noUnusedParameters":         true,
+    "noImplicitReturns":          true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl":                    ".",
+    "paths": {
+      "@config/*":      ["src/config/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@middleware/*":  ["src/middleware/*"],
+      "@models/*":      ["src/models/*"],
+      "@routes/*":      ["src/routes/*"],
+      "@services/*":    ["src/services/*"],
+      "@sockets/*":     ["src/sockets/*"],
+      "@utils/*":       ["src/utils/*"],
+      "@validators/*":  ["src/validators/*"],
+      "@types-local/*": ["src/types/*"]
+    }
+  },
+  "include": ["src/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
+}
