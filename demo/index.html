@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FriendChat — Interactive Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;font-size:14px;background:#f8f9fb;color:#111827;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input{font-family:inherit}
+::selection{background:#e0e9ff;color:#3730a3}
+:focus-visible{outline:2px solid #4f46e5;outline-offset:2px;border-radius:4px}
+:focus:not(:focus-visible){outline:none}
+
+/* ── Design tokens ── */
+:root{
+  --brand-50:#f0f4ff;--brand-100:#e0e9ff;--brand-200:#c7d7fe;--brand-500:#6366f1;--brand-600:#4f46e5;--brand-700:#4338ca;
+  --surface:#fff;--surface-subtle:#f8f9fb;--surface-muted:#f1f3f7;
+  --ink:#111827;--ink-muted:#6b7280;--ink-faint:#9ca3af;--ink-ghost:#d1d5db;
+  --success:#10b981;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;
+  --radius:8px;--radius-lg:12px;--radius-xl:16px;--radius-2xl:20px;
+  --shadow-card:0 1px 3px 0 rgb(0 0 0/.06),0 1px 2px -1px rgb(0 0 0/.04);
+  --shadow-card-hover:0 4px 12px 0 rgb(0 0 0/.08);
+  --shadow-modal:0 20px 60px -10px rgb(0 0 0/.18);
+}
+
+/* ── Layout shell ── */
+#app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:68px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;border-right:1px solid #f3f4f6;background:#fff;padding:16px 0;gap:4px}
+.main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── Auth page ── */
+.auth-page{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,#f0f4ff 0%,#f8f9fb 50%,#f1f3f7 100%);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+  overflow-y:auto;
+  z-index:100;
+}
+.auth-inner{
+  width:100%;
+  max-width:420px;
+  margin:auto;
+  animation:fadeIn .2s ease;
+}
+.auth-card{
+  width:100%;
+  background:#fff;
+  border-radius:var(--radius-2xl);
+  box-shadow:var(--shadow-modal);
+  border:1px solid #f3f4f6;
+  padding:40px;
+}
+@media(max-width:480px){
+  .auth-card{padding:28px 24px;}
+}
+.auth-logo{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:32px}
+.auth-logo-mark{width:56px;height:56px;border-radius:var(--radius-xl);background:var(--brand-600);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgb(79 70 229/.3),0 0 0 4px #e0e9ff;color:#fff;font-size:18px;font-weight:700;letter-spacing:-.5px}
+
+/* ── Sidebar ── */
+.logo-mark{width:36px;height:36px;border-radius:var(--radius-lg);background:var(--brand-600);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgb(79 70 229/.3);margin-bottom:8px;flex-shrink:0}
+.nav-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.nav-btn{position:relative;width:40px;height:40px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--ink-muted);transition:all .15s;flex-shrink:0}
+.nav-btn:hover{background:var(--surface-muted);color:var(--ink)}
+.nav-btn.active{background:var(--brand-600);color:#fff;box-shadow:0 2px 8px rgb(79 70 229/.3)}
+.nav-badge{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
+.sidebar-bottom{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:8px}
+.avatar-sm{width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--brand-100);display:flex;align-items:center;justify-content:center;color:var(--brand-700);font-size:12px;font-weight:600;flex-shrink:0}
+.logout-btn{width:36px;height:36px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;color:var(--ink-muted);transition:all .15s}
+.logout-btn:hover{background:var(--surface-muted);color:var(--ink)}
+
+/* ── Page header ── */
+.page-header{border-bottom:1px solid #f3f4f6;background:#fff;padding:16px 24px;flex-shrink:0}
+.page-header h1{font-size:15px;font-weight:600;color:var(--ink)}
+.page-header p{font-size:13px;color:var(--ink-muted);margin-top:2px}
+.page-content{flex:1;overflow-y:auto;padding:16px 24px;scrollbar-width:thin;scrollbar-color:#d1d5db transparent}
+
+/* ── Search input ── */
+.search-wrap{position:relative;margin-top:12px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-faint);pointer-events:none}
+.search-input{height:36px;width:100%;max-width:320px;border-radius:var(--radius-lg);border:1px solid #e5e7eb;background:var(--surface-muted);padding:0 32px 0 36px;font-size:13px;color:var(--ink);transition:all .15s}
+.search-input::placeholder{color:var(--ink-faint)}
+.search-input:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgb(99 102 241/.12)}
+
+/* ── Card ── */
+.card{border-radius:var(--radius-xl);background:#fff;box-shadow:var(--shadow-card);border:1px solid #f3f4f6;transition:box-shadow .15s,border-color .15s}
+.card:hover{box-shadow:var(--shadow-card-hover);border-color:var(--brand-200)}
+
+/* ── User grid ── */
+.user-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.user-card{display:flex;align-items:center;gap:12px;padding:16px}
+.avatar-md{width:44px;height:44px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex-shrink:0;position:relative}
+.presence-dot{position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;border:2px solid #fff}
+.presence-dot.online{background:var(--success)}
+.presence-dot.offline{background:#d1d5db}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-handle{font-size:12px;color:var(--ink-muted)}
+.user-status-line{font-size:11px;margin-top:2px}
+.user-status-line.online{color:var(--success)}
+.user-status-line.offline{color:var(--ink-faint)}
+
+/* ── Status pills ── */
+.pill{display:inline-flex;align-items:center;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500}
+.pill-friends{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+.pill-pending{background:#fef3c7;color:#78350f;border:1px solid #fde68a}
+.pill-received{background:#dbeafe;color:#1e3a8a;border:1px solid #93c5fd}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius);font-size:13px;font-weight:500;transition:all .15s;flex-shrink:0}
+.btn-sm{height:32px;padding:0 12px;font-size:12px;border-radius:var(--radius)}
+.btn-md{height:36px;padding:0 16px}
+.btn-lg{height:44px;padding:0 20px;font-size:15px}
+.btn-primary{background:var(--brand-600);color:#fff;box-shadow:0 1px 2px rgb(0 0 0/.1)}
+.btn-primary:hover{background:var(--brand-700)}
+.btn-secondary{background:var(--surface-muted);color:var(--ink);border:1px solid #e5e7eb}
+.btn-secondary:hover{background:#e9ebf0}
+.btn-danger{background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-full{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{color:var(--ink-muted)}
+.btn-ghost:hover{background:var(--surface-muted);color:var(--ink)}
+
+/* ── Friend request cards ── */
+.request-list{display:flex;flex-direction:column;gap:12px;max-width:560px}
+.req-card{display:flex;align-items:center;gap:14px;padding:16px}
+.req-meta{font-size:11px;color:var(--ink-muted);margin-top:2px}
+.req-actions{display:flex;gap:8px;flex-shrink:0}
+.settled-card{display:flex;align-items:center;gap:10px;padding:12px 16px;animation:fadeIn .25s ease}
+.settled-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.settled-accepted .settled-icon{background:#d1fae5;color:#065f46}
+.settled-rejected .settled-icon{background:#f3f4f6;color:var(--ink-muted)}
+.settled-text{font-size:13px;color:var(--ink-muted)}
+
+/* ── Realtime badge ── */
+.realtime-indicator{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--ink-muted)}
+.realtime-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}
+
+/* ── Conversations layout ── */
+.conv-shell{display:flex;height:100%;overflow:hidden}
+.conv-sidebar{width:280px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #f3f4f6;background:#fff}
+.conv-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--surface-subtle)}
+.conv-list{flex:1;overflow-y:auto;padding:8px 4px;scrollbar-width:thin;scrollbar-color:#d1d5db transparent}
+.conv-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-lg);cursor:pointer;transition:all .1s;margin:0 4px}
+.conv-item:hover{background:var(--surface-muted)}
+.conv-item.active{background:var(--brand-50)}
+.conv-item-info{flex:1;min-width:0}
+.conv-item-top{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.conv-item-name{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-item-name.bold{font-weight:700}
+.conv-item-time{font-size:10px;color:var(--ink-faint);flex-shrink:0}
+.conv-item-preview{font-size:12px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-item.active .conv-item-name{color:var(--brand-700);font-weight:600}
+.unread-badge{min-width:18px;height:18px;border-radius:9px;background:var(--brand-600);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0}
+
+/* ── Chat panel ── */
+.chat-header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f3f4f6;background:#fff;flex-shrink:0}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin;scrollbar-color:#d1d5db transparent}
+.msg-row{display:flex;align-items:flex-end;gap:8px}
+.msg-row.sent{flex-direction:row-reverse}
+.msg-bubble{max-width:320px;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.5;position:relative}
+.msg-bubble.received{background:var(--surface-muted);color:var(--ink);border-bottom-left-radius:4px}
+.msg-bubble.sent{background:var(--brand-600);color:#fff;border-bottom-right-radius:4px}
+.msg-meta{font-size:10px;margin-top:4px;opacity:.65}
+.msg-receipts{font-size:11px;margin-top:2px;opacity:.7;text-align:right}
+.typing-row{display:flex;align-items:center;gap:8px}
+.typing-bubble{background:var(--surface-muted);border-radius:16px;border-bottom-left-radius:4px;padding:10px 14px;display:flex;gap:4px;align-items:center}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);animation:typingPulse 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+.chat-input-area{border-top:1px solid #f3f4f6;background:#fff;padding:12px 16px;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.chat-input{flex:1;min-height:40px;max-height:120px;border-radius:var(--radius-xl);border:1px solid #e5e7eb;background:var(--surface-muted);padding:10px 14px;font-size:13px;color:var(--ink);resize:none;line-height:1.4;transition:all .15s}
+.chat-input:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgb(99 102 241/.12)}
+.send-btn{width:40px;height:40px;border-radius:50%;background:var(--brand-600);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgb(79 70 229/.3);transition:all .15s}
+.send-btn:hover{background:var(--brand-700);transform:scale(1.05)}
+
+/* ── Skeleton ── */
+.skeleton{position:relative;overflow:hidden;border-radius:6px;background:#f1f3f7}
+.skeleton::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 25%,rgba(255,255,255,.7) 50%,transparent 75%);background-size:200% 100%;animation:shimmer 1.6s linear infinite}
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+
+/* ── Toast ── */
+.toast-stack{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{pointer-events:all;width:300px;border-radius:var(--radius-xl);background:#fff;box-shadow:var(--shadow-modal);overflow:hidden;animation:slideUp .2s ease;border:1px solid transparent}
+.toast.success{border-color:#a7f3d0}
+.toast.error{border-color:#fecaca}
+.toast.info{border-color:#93c5fd}
+.toast-body{display:flex;align-items:flex-start;gap:10px;padding:12px 14px}
+.toast-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.toast.success .toast-icon{background:#d1fae5;color:#065f46}
+.toast.error   .toast-icon{background:#fee2e2;color:#7f1d1d}
+.toast.info    .toast-icon{background:#dbeafe;color:#1e3a8a}
+.toast-msg{flex:1;font-size:13px;font-weight:500;line-height:1.4;padding-top:3px}
+.toast-close{background:none;border:none;color:var(--ink-faint);padding:2px;border-radius:4px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0}
+.toast-progress{height:3px;background:#e5e7eb}
+.toast-bar{height:100%;transition:width .1s linear}
+.toast.success .toast-bar{background:#10b981}
+.toast.error   .toast-bar{background:#ef4444}
+.toast.info    .toast-bar{background:#3b82f6}
+
+/* ── Input ── */
+.input-wrap{display:flex;flex-direction:column;gap:6px}
+.input-label{font-size:13px;font-weight:500;color:var(--ink)}
+.input-field{height:40px;width:100%;border-radius:var(--radius);border:1px solid #e5e7eb;background:#fff;padding:0 12px;font-size:13px;color:var(--ink);transition:all .15s}
+.input-field::placeholder{color:var(--ink-faint)}
+.input-field:focus{border-color:var(--brand-500);box-shadow:0 0 0 3px rgb(99 102 241/.12)}
+.input-field.error{border-color:var(--danger);box-shadow:0 0 0 3px rgb(239 68 68/.1)}
+.input-error{font-size:11px;color:var(--danger)}
+.input-hint{font-size:11px;color:var(--ink-muted)}
+
+/* ── Password strength ── */
+.pw-strength{margin-top:8px}
+.pw-bars{display:flex;gap:4px;margin-bottom:4px}
+.pw-bar{height:4px;flex:1;border-radius:2px;transition:background .3s}
+.pw-label{font-size:11px;color:var(--ink-muted)}
+
+/* ── Page tabs (top navigation demo) ── */
+.page-tabs{display:flex;gap:4px;padding:0 24px;border-bottom:1px solid #f3f4f6;background:#fff;flex-shrink:0}
+.page-tab{padding:12px 4px;font-size:13px;color:var(--ink-muted);border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.page-tab:hover{color:var(--ink)}
+.page-tab.active{color:var(--brand-600);border-bottom-color:var(--brand-600);font-weight:500}
+
+/* ── Empty state ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:64px 24px;text-align:center}
+.empty-icon{width:64px;height:64px;border-radius:var(--radius-xl);background:var(--surface-muted);display:flex;align-items:center;justify-content:center}
+.empty-title{font-size:14px;font-weight:600;color:var(--ink)}
+.empty-body{font-size:13px;color:var(--ink-muted);max-width:280px;line-height:1.5}
+
+/* ── Stats strip ── */
+.stats-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+.stat-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-muted)}
+.stat-dot{width:6px;height:6px;border-radius:50%}
+
+/* ── Error alert ── */
+.error-alert{display:flex;align-items:flex-start;gap:10px;border-radius:var(--radius-xl);background:#fee2e2;border:1px solid #fecaca;padding:12px 14px}
+.error-alert-icon{color:var(--danger);flex-shrink:0;margin-top:1px}
+.error-alert-text{font-size:13px;color:#7f1d1d}
+.error-retry{font-size:12px;color:#7f1d1d;text-decoration:underline;cursor:pointer;margin-top:4px}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes typingPulse{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+@keyframes scaleIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ── Demo top bar ── */
+.demo-bar{background:var(--brand-600);color:#fff;text-align:center;font-size:12px;padding:6px;font-weight:500;flex-shrink:0}
+.demo-bar span{opacity:.75;margin:0 4px}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div id="root" style="display:flex;flex-direction:column;height:100vh">
+  <div class="demo-bar">
+    FriendChat — Interactive UI Preview
+    <span>·</span>
+    Click the sidebar icons to switch pages
+    <span>·</span>
+    All interactions are live
+  </div>
+  <div id="app" style="flex:1;min-height:0"></div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// DATA — mock users, requests, conversations, messages
+// ═══════════════════════════════════════════════════════════════════════
+
+const COLORS = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777'];
+const mockUsers = [
+  { id:'u1', name:'Alice Johnson',   handle:'alice_j',   status:'friends',          online:true,  color:'#4f46e5', initials:'AJ' },
+  { id:'u2', name:'Bob Chen',        handle:'bobchen',   status:'friends',          online:true,  color:'#0891b2', initials:'BC' },
+  { id:'u3', name:'Carol Williams',  handle:'carol_w',   status:'pending_received', online:false, color:'#059669', initials:'CW' },
+  { id:'u4', name:'Dave Kumar',      handle:'dkumar',    status:'none',             online:true,  color:'#d97706', initials:'DK' },
+  { id:'u5', name:'Eva Martinez',    handle:'eva_m',     status:'none',             online:false, color:'#dc2626', initials:'EM' },
+  { id:'u6', name:'Frank O\'Brien',  handle:'frankob',   status:'pending_sent',     online:true,  color:'#7c3aed', initials:'FO' },
+  { id:'u7', name:'Grace Lin',       handle:'gracel',    status:'none',             online:true,  color:'#db2777', initials:'GL' },
+  { id:'u8', name:'Henry Park',      handle:'h_park',    status:'none',             online:false, color:'#0891b2', initials:'HP' },
+];
+const mockRequests = [
+  { id:'r1', from:mockUsers[2], time:'2 min ago',  settled:null },
+  { id:'r2', from:{ id:'u9', name:'Iris Scott', handle:'iris_s', color:'#7c3aed', initials:'IS', online:false }, time:'14 min ago', settled:null },
+];
+const mockConversations = [
+  { id:'c1', user:mockUsers[0], lastMsg:'See you tomorrow! 👋', time:'2m',  unread:3, online:true },
+  { id:'c2', user:mockUsers[1], lastMsg:'Thanks for the help!',  time:'1h',  unread:0, online:true  },
+  { id:'c3', user:{ id:'u10', name:'Zoe Adams', handle:'zoe_a', color:'#db2777', initials:'ZA', online:false }, lastMsg:'That sounds great', time:'3h', unread:1, online:false },
+];
+const mockMessages = {
+  c1: [
+    { id:'m1', text:'Hey Alice! How are you doing?',         sent:false, time:'10:31', receipts:'' },
+    { id:'m2', text:'I\'m great, thanks! Just finished the project.',     sent:true,  time:'10:32', receipts:'✓✓' },
+    { id:'m3', text:'Nice! Was it the CometChat assignment?', sent:false, time:'10:33', receipts:'' },
+    { id:'m4', text:'Yep! Built the full friend-only messaging app. It was really fun to architect the backend enforcement piece.', sent:true, time:'10:34', receipts:'✓✓' },
+    { id:'m5', text:'That sounds awesome. I saw you used the isFriends middleware — smart approach!', sent:false, time:'10:35', receipts:'' },
+    { id:'m6', text:'Thanks! The trick was keeping it as route-level middleware so no controller can accidentally skip it.', sent:true, time:'10:36', receipts:'👁' },
+    { id:'m7', text:'See you tomorrow! 👋', sent:false, time:'10:37', receipts:'' },
+  ],
+  c2: [
+    { id:'n1', text:'Hey Bob, can you review the PR?', sent:true, time:'9:00', receipts:'✓✓' },
+    { id:'n2', text:'Sure! Just looking at it now.', sent:false, time:'9:05', receipts:'' },
+    { id:'n3', text:'Thanks for the help!', sent:false, time:'9:30', receipts:'' },
+  ],
+  c3: [
+    { id:'o1', text:'Are you free this weekend?', sent:true, time:'Yesterday', receipts:'✓✓' },
+    { id:'o2', text:'That sounds great', sent:false, time:'Yesterday', receipts:'' },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════
+
+let state = {
+  page: 'login',                    // login | register | users | requests | conversations
+  loggedIn: false,
+  currentUser: { name:'You', initials:'ME', color:'#4f46e5' },
+  users: JSON.parse(JSON.stringify(mockUsers)),
+  requests: JSON.parse(JSON.stringify(mockRequests)),
+  conversations: JSON.parse(JSON.stringify(mockConversations)),
+  messages: JSON.parse(JSON.stringify(mockMessages)),
+  activeConv: null,
+  requestUnread: 2,
+  userSearch: '',
+  showTyping: false,
+  loginForm: { email:'', password:'', emailErr:'', passwordErr:'' },
+  regForm:   { name:'', username:'', email:'', password:'', nameErr:'', usernameErr:'', emailErr:'', passwordErr:'' },
+  loginLoading: false,
+  regLoading: false,
+  pwStrength: 0,
+  convSearch: '',
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOAST SYSTEM
+// ═══════════════════════════════════════════════════════════════════════
+
+function showToast(msg, type='info', duration=3500) {
+  const stack = document.getElementById('toastStack');
+  const id = 'toast-' + Date.now();
+  const icons = { success:'✓', error:'✕', info:'ℹ', warning:'⚠' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.id = id;
+  el.innerHTML = `
+    <div class="toast-body">
+      <div class="toast-icon">${icons[type]||'ℹ'}</div>
+      <div class="toast-msg">${msg}</div>
+      <button class="toast-close" onclick="dismissToast('${id}')">×</button>
+    </div>
+    <div class="toast-progress"><div class="toast-bar" id="bar-${id}" style="width:100%"></div></div>`;
+  stack.appendChild(el);
+
+  let w = 100;
+  const interval = setInterval(() => {
+    w -= (100 / (duration / 100));
+    const bar = document.getElementById('bar-' + id);
+    if (bar) bar.style.width = Math.max(0, w) + '%';
+    if (w <= 0) { clearInterval(interval); dismissToast(id); }
+  }, 100);
+}
+
+function dismissToast(id) {
+  const el = document.getElementById(id);
+  if (el) { el.style.opacity='0'; el.style.transform='translateY(4px)'; setTimeout(() => el.remove(), 200); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// AVATAR HELPER
+// ═══════════════════════════════════════════════════════════════════════
+
+function avatar(user, size='md', showPresence=false) {
+  const s = size === 'sm' ? 32 : size === 'xs' ? 28 : 44;
+  const fs = size === 'sm' ? 12 : size === 'xs' ? 11 : 15;
+  const dot = showPresence ? `<span class="presence-dot ${user.online?'online':'offline'}"></span>` : '';
+  return `<div class="avatar-md" style="width:${s}px;height:${s}px;font-size:${fs}px;background:${user.color}20;color:${user.color};position:relative">
+    ${user.initials||user.name.slice(0,2).toUpperCase()}${dot}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SKELETON LOADERS
+// ═══════════════════════════════════════════════════════════════════════
+
+function skeletonGrid(n=6) {
+  return Array.from({length:n}).map(() => `
+    <div class="card user-card" style="pointer-events:none">
+      <div class="skeleton" style="width:44px;height:44px;border-radius:50%;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:13px;width:120px;border-radius:6px"></div>
+        <div class="skeleton" style="height:11px;width:80px;border-radius:6px"></div>
+      </div>
+      <div class="skeleton" style="height:32px;width:90px;border-radius:8px;flex-shrink:0"></div>
+    </div>`).join('');
+}
+
+function skeletonRequestList(n=3) {
+  return Array.from({length:n}).map(() => `
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:16px;pointer-events:none">
+      <div class="skeleton" style="width:44px;height:44px;border-radius:50%;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:13px;width:110px;border-radius:6px"></div>
+        <div class="skeleton" style="height:11px;width:80px;border-radius:6px"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="skeleton" style="height:32px;width:78px;border-radius:8px"></div>
+        <div class="skeleton" style="height:32px;width:68px;border-radius:8px"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderSidebar() {
+  const pages = [
+    { id:'conversations', icon:'💬', label:'Chats' },
+    { id:'requests',      icon:'👥', label:'Requests' },
+    { id:'users',         icon:'🔍', label:'Discover' },
+  ];
+  const unread = state.requestUnread;
+  return `
+    <div class="sidebar">
+      <div class="logo-mark">FC</div>
+      <div class="nav-group">
+        ${pages.map(p => `
+          <button class="nav-btn ${state.page===p.id?'active':''}" onclick="navigate('${p.id}')" title="${p.label}">
+            ${p.icon==='💬' ? svgChat() : p.icon==='👥' ? svgPeople() : svgSearch()}
+            ${p.id==='requests' && unread > 0 ? `<span class="nav-badge">${unread}</span>` : ''}
+          </button>`).join('')}
+      </div>
+      <div class="sidebar-bottom">
+        <div class="avatar-sm" style="background:${state.currentUser.color}20;color:${state.currentUser.color}" title="${state.currentUser.name}">
+          ${state.currentUser.initials}
+        </div>
+        <button class="logout-btn" onclick="handleLogout()" title="Sign out">${svgLogout()}</button>
+      </div>
+    </div>`;
+}
+
+function renderLogin() {
+  const f = state.loginForm;
+  return `
+    <div class="auth-page">
+      <div class="auth-inner">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">FC</div>
+          <div style="text-align:center">
+            <div style="font-weight:700;font-size:16px;color:var(--ink)">FriendChat</div>
+            <div style="font-size:13px;color:var(--ink-muted);margin-top:3px">Only chat with people you trust</div>
+          </div>
+        </div>
+        <div class="auth-card">
+          <div style="margin-bottom:28px">
+            <div style="font-size:22px;font-weight:700;color:var(--ink)">Welcome back</div>
+            <div style="font-size:14px;color:var(--ink-muted);margin-top:6px">Sign in to your account to continue</div>
+          </div>
+          ${f.emailErr||f.passwordErr ? `<div class="error-alert" style="margin-bottom:20px">
+            <div class="error-alert-icon">${svgAlert()}</div>
+            <div><div class="error-alert-text">Please fix the errors below</div></div>
+          </div>` : ''}
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div class="input-wrap">
+              <label class="input-label" for="loginEmail">Email address</label>
+              <input id="loginEmail" class="input-field ${f.emailErr?'error':''}" type="email" placeholder="you@example.com"
+                value="${f.email}" oninput="updateLoginForm('email',this.value)" />
+              ${f.emailErr ? `<span class="input-error">${f.emailErr}</span>` : ''}
+            </div>
+            <div class="input-wrap">
+              <label class="input-label" for="loginPw">Password</label>
+              <input id="loginPw" class="input-field ${f.passwordErr?'error':''}" type="password" placeholder="••••••••"
+                value="${f.password}" oninput="updateLoginForm('password',this.value)" />
+              ${f.passwordErr ? `<span class="input-error">${f.passwordErr}</span>` : ''}
+            </div>
+            <button class="btn btn-primary btn-lg btn-full" style="margin-top:6px;height:46px;font-size:15px;border-radius:12px" onclick="handleLogin()">
+              ${state.loginLoading ? `<span class="skeleton" style="width:80px;height:14px;border-radius:4px;background:rgba(255,255,255,.3)"></span>` : 'Sign in'}
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin:24px 0">
+            <div style="flex:1;height:1px;background:#f3f4f6"></div>
+            <span style="font-size:12px;color:var(--ink-faint)">or</span>
+            <div style="flex:1;height:1px;background:#f3f4f6"></div>
+          </div>
+          <p style="text-align:center;font-size:14px;color:var(--ink-muted)">
+            Don't have an account?
+            <a onclick="navigate('register')" style="color:var(--brand-600);font-weight:600;cursor:pointer;text-decoration:none;margin-left:4px">Create one</a>
+          </p>
+        </div>
+        <p style="text-align:center;font-size:12px;color:var(--ink-faint);margin-top:20px">
+          Demo: <strong style="color:var(--ink-muted)">alice@example.com</strong> / <strong style="color:var(--ink-muted)">password123</strong>
+        </p>
+      </div>
+    </div>`;
+}
+
+function renderRegister() {
+  const f = state.regForm;
+  const pwBars = [
+    state.pwStrength > 0 ? (state.pwStrength===1?'#ef4444':state.pwStrength===2?'#f59e0b':'#10b981') : '#f1f3f7',
+    state.pwStrength > 1 ? (state.pwStrength===2?'#f59e0b':'#10b981') : '#f1f3f7',
+    state.pwStrength > 2 ? '#10b981' : '#f1f3f7',
+  ];
+  const pwLabels = ['','Weak','Fair','Strong'];
+  return `
+    <div class="auth-page">
+      <div class="auth-inner">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">FC</div>
+          <div style="text-align:center">
+            <div style="font-weight:700;font-size:16px;color:var(--ink)">FriendChat</div>
+            <div style="font-size:13px;color:var(--ink-muted);margin-top:3px">Only chat with people you trust</div>
+          </div>
+        </div>
+        <div class="auth-card">
+          <div style="margin-bottom:28px">
+            <div style="font-size:22px;font-weight:700;color:var(--ink)">Create an account</div>
+            <div style="font-size:14px;color:var(--ink-muted);margin-top:6px">Join and start connecting with friends</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="input-wrap">
+              <label class="input-label">Display name</label>
+              <input class="input-field ${f.nameErr?'error':''}" placeholder="Alice Smith" value="${f.name}" oninput="updateRegForm('name',this.value)" />
+              ${f.nameErr?`<span class="input-error">${f.nameErr}</span>`:''}
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Username</label>
+              <input class="input-field ${f.usernameErr?'error':''}" placeholder="alice_123" value="${f.username}" oninput="updateRegForm('username',this.value)" />
+              ${f.usernameErr?`<span class="input-error">${f.usernameErr}</span>`:`<span class="input-hint">Letters, numbers, underscores only</span>`}
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Email</label>
+              <input class="input-field ${f.emailErr?'error':''}" type="email" placeholder="you@example.com" value="${f.email}" oninput="updateRegForm('email',this.value)" />
+              ${f.emailErr?`<span class="input-error">${f.emailErr}</span>`:''}
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Password</label>
+              <input class="input-field ${f.passwordErr?'error':''}" type="password" placeholder="Min 8 characters" value="${f.password}" oninput="updateRegForm('password',this.value)" />
+              ${f.passwordErr?`<span class="input-error">${f.passwordErr}</span>`:''}
+              ${f.password ? `<div class="pw-strength">
+                <div class="pw-bars">${pwBars.map(c=>`<div class="pw-bar" style="background:${c}"></div>`).join('')}</div>
+                <div class="pw-label">${pwLabels[state.pwStrength]}</div>
+              </div>` : ''}
+            </div>
+            <button class="btn btn-primary btn-lg btn-full" style="margin-top:6px;height:46px;font-size:15px;border-radius:12px" onclick="handleRegister()">
+              ${state.regLoading ? `<span class="skeleton" style="width:110px;height:14px;border-radius:4px;background:rgba(255,255,255,.3)"></span>` : 'Create account'}
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin:24px 0">
+            <div style="flex:1;height:1px;background:#f3f4f6"></div>
+            <span style="font-size:12px;color:var(--ink-faint)">or</span>
+            <div style="flex:1;height:1px;background:#f3f4f6"></div>
+          </div>
+          <p style="text-align:center;font-size:14px;color:var(--ink-muted)">
+            Already have an account? <a onclick="navigate('login')" style="color:var(--brand-600);font-weight:600;cursor:pointer;text-decoration:none;margin-left:4px">Sign in</a>
+          </p>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderUsers() {
+  const q = state.userSearch.toLowerCase();
+  const filtered = q ? state.users.filter(u => u.name.toLowerCase().includes(q)||u.handle.toLowerCase().includes(q)) : state.users;
+  const counts = {
+    friends:  state.users.filter(u=>u.status==='friends').length,
+    pending:  state.users.filter(u=>u.status==='pending_sent'||u.status==='pending_received').length,
+    discover: state.users.filter(u=>u.status==='none').length,
+  };
+  return `
+    <div class="page-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>Discover people</h1>
+          <p>${state.users.length} members on this app</p>
+        </div>
+        <div class="stats-strip">
+          ${counts.friends  > 0 ? `<div class="stat-item"><span class="stat-dot" style="background:#10b981"></span>${counts.friends} friend${counts.friends!==1?'s':''}</div>` : ''}
+          ${counts.pending  > 0 ? `<div class="stat-item"><span class="stat-dot" style="background:#f59e0b"></span>${counts.pending} pending</div>` : ''}
+          ${counts.discover > 0 ? `<div class="stat-item"><span class="stat-dot" style="background:var(--brand-400)"></span>${counts.discover} to discover</div>` : ''}
+        </div>
+      </div>
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/></svg>
+        <input class="search-input" placeholder="Search by name or username…" value="${state.userSearch}"
+          oninput="state.userSearch=this.value;renderApp()" />
+      </div>
+    </div>
+    <div class="page-content">
+      ${filtered.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-icon">${svgPeople()}</div>
+          <div class="empty-title">${q ? `No results for "${q}"` : 'No users found'}</div>
+          <div class="empty-body">${q ? 'Try a different name or username.' : 'Be the first to invite someone.'}</div>
+        </div>` : `
+        <div class="user-grid">
+          ${filtered.map(u => renderUserCard(u)).join('')}
+        </div>`}
+    </div>`;
+}
+
+function renderUserCard(u) {
+  const pillMap = {
+    friends:          `<span class="pill pill-friends">✓ Friends</span>`,
+    pending_sent:     `<span class="pill pill-pending">⏳ Pending</span>`,
+    pending_received: `<span class="pill pill-received">📩 Respond</span>`,
+    none:             '',
+  };
+  const btnMap = {
+    friends:          `<button class="btn btn-secondary btn-sm" onclick="openConvFromUser('${u.id}')">Message</button>`,
+    pending_sent:     `<button class="btn btn-secondary btn-sm" disabled>${svgClock()} Pending</button>`,
+    pending_received: `<button class="btn btn-secondary btn-sm" onclick="navigate('requests')">Respond</button>`,
+    none:             `<button class="btn btn-primary btn-sm" onclick="sendFriendRequest('${u.id}')">Add friend</button>`,
+  };
+  return `
+    <div class="card user-card">
+      ${avatar(u, 'md', true)}
+      <div class="user-info">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="user-name">${u.name}</span>
+          ${pillMap[u.status]||''}
+        </div>
+        <div class="user-handle">@${u.handle}</div>
+        <div class="user-status-line ${u.online?'online':'offline'}">${u.online?'● Online':'○ Offline'}</div>
+      </div>
+      ${btnMap[u.status]||''}
+    </div>`;
+}
+
+function renderRequests() {
+  const reqs = state.requests;
+  return `
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <h1>Friend requests</h1>
+            ${state.requestUnread > 0 ? `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;background:var(--brand-600);color:#fff;font-size:10px;font-weight:700;padding:0 6px;animation:scaleIn .2s ease">${state.requestUnread}</span>` : ''}
+          </div>
+          <p>${reqs.filter(r=>!r.settled).length > 0 ? `${reqs.filter(r=>!r.settled).length} pending request${reqs.filter(r=>!r.settled).length!==1?'s':''}` : 'No pending requests'}</p>
+        </div>
+      </div>
+      <div class="realtime-indicator">
+        <div class="realtime-dot"></div>
+        Updates in real time via CometChat
+      </div>
+    </div>
+    <div class="page-content">
+      ${reqs.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-icon">${svgInbox()}</div>
+          <div class="empty-title">Inbox is empty</div>
+          <div class="empty-body">When someone sends you a friend request it will appear here instantly.</div>
+        </div>` : `
+        <div class="request-list">
+          ${reqs.map(r => renderRequestCard(r)).join('')}
+        </div>`}
+    </div>`;
+}
+
+function renderRequestCard(r) {
+  if (r.settled) {
+    const isAccepted = r.settled === 'accepted';
+    return `
+      <div class="card settled-card settled-${r.settled}">
+        <div class="settled-icon">${isAccepted ? '✓' : '✕'}</div>
+        <span class="settled-text">${isAccepted ? `You're now friends with ${r.from.name}` : `Request from ${r.from.name} declined`}</span>
+      </div>`;
+  }
+  return `
+    <div class="card req-card">
+      ${avatar(r.from, 'md', false)}
+      <div style="flex:1;min-width:0">
+        <div class="user-name">${r.from.name}</div>
+        <div class="req-meta">@${r.from.handle} · ${r.time}</div>
+      </div>
+      <div class="req-actions">
+        <button class="btn btn-danger btn-sm" onclick="handleReject('${r.id}')">Decline</button>
+        <button class="btn btn-primary btn-sm" onclick="handleAccept('${r.id}')">Accept</button>
+      </div>
+    </div>`;
+}
+
+function renderConversations() {
+  const q = state.convSearch.toLowerCase();
+  const filtered = q ? state.conversations.filter(c => c.user.name.toLowerCase().includes(q)||c.user.handle.toLowerCase().includes(q)) : state.conversations;
+  const activeConv = state.activeConv;
+  const msgs = activeConv ? (state.messages[activeConv] || []) : [];
+  const activeMeta = activeConv ? state.conversations.find(c=>c.id===activeConv) : null;
+
+  return `
+    <div class="conv-shell">
+      <!-- Sidebar -->
+      <div class="conv-sidebar">
+        <div class="page-header" style="padding:14px 16px">
+          <h1>Messages</h1>
+          ${state.conversations.length > 0 ? `<p>${state.conversations.length} conversation${state.conversations.length!==1?'s':''}</p>` : ''}
+        </div>
+        ${state.conversations.length > 2 ? `
+          <div style="padding:8px 8px;border-bottom:1px solid #f3f4f6">
+            <div style="position:relative">
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--ink-faint)" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/></svg>
+              <input style="height:32px;width:100%;border-radius:10px;border:1px solid #e5e7eb;background:var(--surface-muted);padding:0 10px 0 28px;font-size:12px;color:var(--ink)" placeholder="Search conversations…" value="${state.convSearch}" oninput="state.convSearch=this.value;renderApp()" />
+            </div>
+          </div>` : ''}
+        <div class="conv-list">
+          ${filtered.length === 0 && state.conversations.length === 0 ? `
+            <div class="empty-state" style="padding:32px 16px">
+              <div class="empty-icon" style="width:48px;height:48px">${svgChat()}</div>
+              <div class="empty-title" style="font-size:13px">No conversations yet</div>
+              <div class="empty-body" style="font-size:12px">Accept a friend request to start chatting.</div>
+              <button class="btn btn-primary btn-sm" onclick="navigate('users')" style="margin-top:4px">Find people</button>
+            </div>` :
+          filtered.length === 0 ? `<div style="text-align:center;padding:32px 16px;font-size:13px;color:var(--ink-muted)">No matches for "${state.convSearch}"</div>` :
+          filtered.map(c => `
+            <div class="conv-item ${activeConv===c.id?'active':''}" onclick="selectConv('${c.id}')">
+              <div style="position:relative;flex-shrink:0">
+                <div class="avatar-sm" style="width:36px;height:36px;font-size:12px;background:${c.user.color}20;color:${c.user.color}">${c.user.initials}</div>
+                <span style="position:absolute;bottom:0;right:0;width:9px;height:9px;border-radius:50%;border:2px solid #fff;background:${c.online?'#10b981':'#d1d5db'}"></span>
+              </div>
+              <div class="conv-item-info">
+                <div class="conv-item-top">
+                  <span class="conv-item-name ${c.unread?'bold':''}">${c.user.name}</span>
+                  <span class="conv-item-time">${c.time}</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+                  <span class="conv-item-preview ${c.unread?'bold':''}">${c.lastMsg||'No messages yet'}</span>
+                  ${c.unread > 0 ? `<span class="unread-badge">${c.unread}</span>` : ''}
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Chat panel -->
+      <div class="conv-panel">
+        ${!activeConv ? `
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--surface-subtle)">
+            <div class="empty-state">
+              <div class="empty-icon">${svgChat()}</div>
+              <div class="empty-title">Select a conversation</div>
+              <div class="empty-body">Choose a friend from the sidebar to start chatting.</div>
+            </div>
+          </div>` : `
+          <!-- Chat header -->
+          <div class="chat-header">
+            ${avatar(activeMeta.user, 'sm', true)}
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--ink)">${activeMeta.user.name}</div>
+              <div style="font-size:11px;color:${activeMeta.online?'var(--success)':'var(--ink-muted)'}">
+                ${activeMeta.online ? '● Online' : '○ Offline'}
+              </div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-ghost" style="padding:6px 8px;border-radius:8px;font-size:12px" onclick="showToast('CometChat call feature available in the full app','info')">📞</button>
+              <button class="btn btn-ghost" style="padding:6px 8px;border-radius:8px;font-size:12px" onclick="showToast('CometChat call feature available in the full app','info')">📹</button>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="chat-messages" id="msgList">
+            ${msgs.map(m => `
+              <div class="msg-row ${m.sent?'sent':''}">
+                ${!m.sent ? `<div class="avatar-sm" style="width:28px;height:28px;font-size:11px;background:${activeMeta.user.color}20;color:${activeMeta.user.color};flex-shrink:0">${activeMeta.user.initials}</div>` : ''}
+                <div>
+                  <div class="msg-bubble ${m.sent?'sent':'received'}">${m.text}</div>
+                  <div class="msg-meta" style="text-align:${m.sent?'right':'left'}">${m.time} ${m.receipts?`<span title="${m.receipts==='✓✓'?'Delivered':m.receipts==='👁'?'Read':''}">${m.receipts}</span>`:''}</div>
+                </div>
+              </div>`).join('')}
+            ${state.showTyping ? `
+              <div class="typing-row">
+                <div class="avatar-sm" style="width:28px;height:28px;font-size:11px;background:${activeMeta.user.color}20;color:${activeMeta.user.color};flex-shrink:0">${activeMeta.user.initials}</div>
+                <div class="typing-bubble">
+                  <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+                </div>
+              </div>` : ''}
+          </div>
+
+          <!-- Input -->
+          <div class="chat-input-area">
+            <textarea id="msgInput" class="chat-input" placeholder="Message ${activeMeta.user.name}…" rows="1"
+              oninput="autoResize(this);handleTyping()"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <button class="send-btn" onclick="sendMessage()">${svgSend()}</button>
+          </div>`}
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+function navigate(page) {
+  if (page === 'requests') { state.requestUnread = 0; }
+  state.page = page;
+  renderApp();
+  if (page === 'conversations') {
+    setTimeout(scrollMessages, 50);
+  }
+}
+
+function handleLogout() {
+  state.loggedIn = false;
+  state.page = 'login';
+  state.activeConv = null;
+  state.loginForm = { email:'', password:'', emailErr:'', passwordErr:'' };
+  renderApp();
+  showToast('Signed out successfully', 'info');
+}
+
+function updateLoginForm(field, val) {
+  state.loginForm[field] = val;
+  state.loginForm[field+'Err'] = '';
+}
+
+function updateRegForm(field, val) {
+  state.regForm[field] = val;
+  state.regForm[field+'Err'] = '';
+  if (field === 'password') {
+    let s = 0;
+    if (val.length >= 8) s++;
+    if (/[A-Z]/.test(val)) s++;
+    if (/[0-9]/.test(val)) s++;
+    state.pwStrength = s;
+  }
+  renderApp();
+}
+
+function handleLogin() {
+  const f = state.loginForm;
+  let valid = true;
+  if (!f.email) { f.emailErr = 'Email is required'; valid = false; }
+  if (!f.password) { f.passwordErr = 'Password is required'; valid = false; }
+  if (!valid) { renderApp(); return; }
+
+  // Simulate loading
+  state.loginLoading = true;
+  renderApp();
+  setTimeout(() => {
+    state.loginLoading = false;
+    if (f.email === 'alice@example.com' && f.password === 'password123') {
+      state.loggedIn = true;
+      state.currentUser = { name:'Alice Johnson', initials:'AJ', color:'#4f46e5' };
+      state.page = 'conversations';
+      renderApp();
+      showToast('Welcome back, Alice! 👋', 'success');
+    } else if (f.email && f.password) {
+      // Accept any credentials for demo
+      state.loggedIn = true;
+      state.currentUser = { name:'Demo User', initials:'DU', color:'#7c3aed' };
+      state.page = 'conversations';
+      renderApp();
+      showToast('Signed in successfully', 'success');
+    } else {
+      f.emailErr = 'Invalid credentials';
+      renderApp();
+    }
+  }, 900);
+}
+
+function handleRegister() {
+  const f = state.regForm;
+  let valid = true;
+  if (!f.name.trim())    { f.nameErr = 'Display name is required'; valid = false; }
+  if (!f.username.trim()){ f.usernameErr = 'Username is required'; valid = false; }
+  else if (!/^[a-zA-Z0-9_]{3,30}$/.test(f.username)) { f.usernameErr = '3–30 chars, letters/numbers/underscores'; valid = false; }
+  if (!f.email)          { f.emailErr = 'Email is required'; valid = false; }
+  if (!f.password || f.password.length < 8) { f.passwordErr = 'Password must be at least 8 characters'; valid = false; }
+  if (!valid) { renderApp(); return; }
+
+  state.regLoading = true;
+  renderApp();
+  setTimeout(() => {
+    state.regLoading = false;
+    state.loggedIn = true;
+    state.currentUser = { name: f.name, initials: f.name.slice(0,2).toUpperCase(), color:'#7c3aed' };
+    state.page = 'conversations';
+    renderApp();
+    showToast(`Account created! Welcome, ${f.name} 🎉`, 'success');
+  }, 1200);
+}
+
+function sendFriendRequest(userId) {
+  const user = state.users.find(u=>u.id===userId);
+  if (!user || user.status !== 'none') return;
+  user.status = 'pending_sent';
+  renderApp();
+  showToast(`Friend request sent to ${user.name}!`, 'success');
+  // Simulate the request arriving back (real-time demo)
+  setTimeout(() => {
+    showToast(`${user.name} received your request`, 'info', 2500);
+  }, 1500);
+}
+
+function handleAccept(reqId) {
+  const req = state.requests.find(r=>r.id===reqId);
+  if (!req || req.settled) return;
+  req.settled = 'accepted';
+
+  // Update users list
+  const user = state.users.find(u=>u.id===req.from.id);
+  if (user) user.status = 'friends';
+
+  // Add to conversations
+  const existing = state.conversations.find(c=>c.user.id===req.from.id);
+  if (!existing) {
+    state.conversations.unshift({ id:'c_'+req.from.id, user:req.from, lastMsg:null, time:'now', unread:0, online:req.from.online||false });
+    state.messages['c_'+req.from.id] = [];
+  }
+
+  renderApp();
+  showToast(`You and ${req.from.name} are now friends! 🎉`, 'success');
+}
+
+function handleReject(reqId) {
+  const req = state.requests.find(r=>r.id===reqId);
+  if (!req || req.settled) return;
+  req.settled = 'rejected';
+  const user = state.users.find(u=>u.id===req.from.id);
+  if (user) user.status = 'none';
+  renderApp();
+  showToast('Request declined', 'info');
+}
+
+function selectConv(convId) {
+  state.activeConv = convId;
+  // Clear unread
+  const c = state.conversations.find(c=>c.id===convId);
+  if (c) c.unread = 0;
+  renderApp();
+  setTimeout(scrollMessages, 50);
+}
+
+function openConvFromUser(userId) {
+  const user = state.users.find(u=>u.id===userId);
+  if (!user || user.status !== 'friends') return;
+  const existing = state.conversations.find(c=>c.user.id===userId);
+  if (existing) {
+    state.activeConv = existing.id;
+  } else {
+    const newId = 'c_'+userId;
+    state.conversations.unshift({ id:newId, user, lastMsg:null, time:'now', unread:0, online:user.online });
+    state.messages[newId] = [];
+    state.activeConv = newId;
+  }
+  state.page = 'conversations';
+  renderApp();
+  setTimeout(scrollMessages, 50);
+}
+
+let typingTimer = null;
+function handleTyping() {
+  if (!state.activeConv) return;
+  state.showTyping = false; // we're the ones typing, not the other person
+}
+
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  if (!input || !state.activeConv) return;
+  const text = input.value.trim();
+  if (!text) return;
+
+  const msgs = state.messages[state.activeConv];
+  if (!msgs) return;
+
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  msgs.push({ id:'m'+Date.now(), text, sent:true, time, receipts:'✓' });
+
+  // Update last message in conversation list
+  const c = state.conversations.find(c=>c.id===state.activeConv);
+  if (c) { c.lastMsg = text; c.time = 'now'; }
+
+  input.value = '';
+  input.style.height = 'auto';
+  renderApp();
+  setTimeout(scrollMessages, 30);
+
+  // Simulate delivery receipt
+  setTimeout(() => {
+    const lastMsg = state.messages[state.activeConv]?.slice(-1)[0];
+    if (lastMsg) lastMsg.receipts = '✓✓';
+    renderApp();
+    scrollMessages();
+  }, 800);
+
+  // Simulate typing indicator then reply
+  setTimeout(() => {
+    state.showTyping = true;
+    renderApp();
+    scrollMessages();
+  }, 1200);
+
+  setTimeout(() => {
+    state.showTyping = false;
+    const replies = [
+      "That's really interesting! Tell me more.",
+      "Got it! Thanks for letting me know 👍",
+      "Sounds great to me!",
+      "I'll check that out. Thanks!",
+      "Haha, totally agree 😄",
+      "That makes a lot of sense actually.",
+    ];
+    const reply = replies[Math.floor(Math.random()*replies.length)];
+    state.messages[state.activeConv].push({ id:'m'+Date.now(), text:reply, sent:false, time, receipts:'' });
+    // Mark our last message as read
+    const myMsgs = state.messages[state.activeConv].filter(m=>m.sent);
+    if (myMsgs.length > 0) myMsgs[myMsgs.length-1].receipts = '👁';
+    if (c) { c.lastMsg = reply; c.time = 'now'; }
+    renderApp();
+    setTimeout(scrollMessages, 30);
+  }, 3000);
+}
+
+function scrollMessages() {
+  const el = document.getElementById('msgList');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SVG ICONS
+// ═══════════════════════════════════════════════════════════════════════
+
+function svgChat() { return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>`; }
+function svgPeople() { return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>`; }
+function svgSearch() { return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/></svg>`; }
+function svgLogout() { return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>`; }
+function svgSend() { return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>`; }
+function svgAlert() { return `<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>`; }
+function svgClock() { return `<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"/></svg>`; }
+function svgInbox() { return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661z"/></svg>`; }
+
+// ═══════════════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderApp() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  if (!state.loggedIn) {
+    app.innerHTML = state.page === 'register' ? renderRegister() : renderLogin();
+    return;
+  }
+
+  const pageMap = {
+    conversations: renderConversations,
+    requests:      renderRequests,
+    users:         renderUsers,
+  };
+  const pageContent = (pageMap[state.page] || renderConversations)();
+
+  app.innerHTML = `
+    ${renderSidebar()}
+    <div class="main-panel">
+      ${pageContent}
+    </div>`;
+}
+
+// Initial render
+renderApp();
+
+// ═══════════════════════════════════════════════════════════════════════
+// SIMULATE INCOMING FRIEND REQUEST (after 5 seconds for demo)
+// ═══════════════════════════════════════════════════════════════════════
+
+setTimeout(() => {
+  if (!state.loggedIn) return;
+  const newReq = {
+    id: 'r_demo',
+    from: { id:'u_new', name:'Sam Rivera', handle:'sam_r', color:'#0891b2', initials:'SR', online:true },
+    time: 'just now',
+    settled: null,
+  };
+  const existing = state.requests.find(r=>r.id==='r_demo');
+  if (existing) return;
+  state.requests.unshift(newReq);
+  state.requestUnread++;
+  renderApp();
+  showToast('📨 New friend request from Sam Rivera!', 'info', 4000);
+}, 6000);
+</script>
+</body>
+</html>
